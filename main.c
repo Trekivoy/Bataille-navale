@@ -1,17 +1,46 @@
 #include <stdio.h>
 #include <stdlib.h>
-#define J1 0
-#define J2 1
-#define ETAT 2
-#define LONGUEUR 24
-#define HAUTEUR 18
-#define corvette 1
-#define destroyer 2
-#define croiseur 3
-#define porte_avion 4
-#define touched 8
-#define untouched 9
+#define IA_VS_IA 2
+#define MAP_H 18
+#define MAP_W 24
 
+
+void load(int plateau [2][MAP_H][MAP_W]){
+    char c;
+    int k;
+    int i;
+    int j;
+
+    FILE *save=fopen("./save.txt","r");
+
+        for(k=0;k<2;k++){
+            for(i=0; i<18; i++){
+                for(j=0;j<24;j++){
+                    c=fgetc(save);
+                    plateau[k][i][j]=c-'0';
+                }
+            }
+        }
+        fclose(save);
+}
+
+void sauvegarde(int plateau [2][MAP_H][MAP_W]){
+
+    FILE *save=fopen("./save.txt","w+");
+    int i=0;
+    int j=0;
+    int k=0;
+
+    for(k=0;k<2;k++){
+        for(i=0; i<18; i++){
+            for(j=0;j<24;j++){
+                fputc(plateau [k][i][j]+'0', save);
+            }
+        }
+    }
+
+    fclose(save);
+}
 void waitFor (unsigned int secs) {
     unsigned int retTime = time(0) + secs;   // Get finishing time.
     while (time(0) < retTime);               // Loop until it arrives.
@@ -27,117 +56,292 @@ int doRand(int startVal, int endVal){
     }
 }
 
-void afficher_tableau(int plateau[LONGUEUR][HAUTEUR][ETAT]){
-      int i = 0;
-      int j = 0;
-      int k = 0;
-      int joueur = 1;// ajouter une valeur joueur changeante
-      char alph[]= "ABCDEFGHIJKLMNOPKL";
-      printf("\n\n");
+void affichage_plateau(int plateau[2][MAP_H][MAP_W], int joueur){
+    char alph[]="ABCDEFGHIJKLMONPQRSTU";
+    int i=joueur;
+    int j=0;
+    int k=0;
+    printf("\n\nPlateau du joueur %d :", joueur+1);
+    printf("\n   1 2 3 4 5 6 7 8 9 101112131415161718192021222324 ");
+    for(j=0;j<18;j++){
+        printf("\n%c| ", alph[j]);
+        for(k=0;k<24;k++){
+            printf("%d ", plateau[joueur][j][k]);
+        }
+    }
+}
+void placer(int plateau[2][MAP_H][MAP_W],int bateau[3],int joueur){
+    int ID_bateau=bateau[0];
+    int taille=bateau[1];
+    int nb=bateau[2];
+    int x=0;
+    int y=0;
+    int i=0;
+    int j=0;
+    int trigger=0;
+    int taille_verif=0;
+    int limite=0;
+    while (i<nb){
+        int hor_vert=doRand(0,1);
+        x=doRand(0,MAP_H-1);
+        y=doRand(0,MAP_W-1);
 
-      printf("\n\n\nPlateau joueur %d : \n\n",joueur);
-      printf ("  _1_ 2_ 3_ 4_ 5_ 6_ 7_ 8_ 9_ 10_11_12_13_14_15_16_17_18_19_20_21_22_23_24") ;
-      for(i = 0; i <HAUTEUR; i++){
-
-          printf(" \n%c |", alph[i]);
-
-          for(j = 0; j < LONGUEUR; j++){
-              printf("%d  ", plateau[j][i][k]);
+        //VERIFICATIONS
+    while (trigger !=99){
+        trigger=0;
+        for(j=0;j<taille;j++){
+            if (hor_vert==0){
+                trigger+=plateau[joueur][x+j][y];
 
 
+                taille_verif=(x+taille);
+                limite=18;
+            }
+            if (hor_vert==1){
+                trigger+=plateau[joueur][x][y+j];
+
+
+                taille_verif=(y+taille);
+                limite=24;
+            }
+        }
+        if ((trigger==0)&&(taille_verif<limite)){
+            trigger=99;
+        }else{
+            x=doRand(0,MAP_H-1);
+            y=doRand(0,MAP_W-1);
+        }
+    }
+    for(j=0;j<taille;j++){
+        if (hor_vert==0){
+            plateau[joueur][x+j][y]=ID_bateau;
+        }
+        if (hor_vert==1){
+            plateau[joueur][x][y+j]=ID_bateau;
+                        }
+        }
+    i++;
+    }
+}
+
+void tir_automatique(int tir_ver, int tir_hor,int player, int ID_joueur, int plateau[2][MAP_H][MAP_W], int points[player][1]){
+        printf("\nAu tour du joueur %d:\n", player+1);
+
+
+            tir_hor=doRand(0,MAP_W-1);
+            tir_ver=doRand(0,MAP_H-1);
+            printf("\ncoordonnees chiffres:%d \n",tir_hor+1);
+            printf("coordonnees lettres:%d \n", tir_ver+1);
+
+            while (plateau[ID_joueur][tir_ver][tir_hor]>7){
+                printf("\ntir impossible recommence\n");
+                tir_hor++;
+                if (tir_hor>MAP_W){
+                    tir_hor=0;
+                    tir_ver++;
+                    if (tir_ver>MAP_H){
+                        tir_ver=0;
+                                      }
+                    }
+
+                printf("\ncoordonnees chiffres:%d \n",tir_hor+1);
+                printf("coordonnees lettres:%d \n", tir_ver+1);
+                }
+
+
+            if (plateau[ID_joueur][tir_ver][tir_hor]>0){
+                plateau[ID_joueur][tir_ver][tir_hor]=9;
+                printf("\nTOUCHE !!!");
+                points[player][0]++;
+                printf("\n Joueur %d || Points=%d",player+1 , points[player][0]);
+
+            }else if (plateau[ID_joueur][tir_ver][tir_hor]==0){printf("\n Joueur %d || Points=%d",player+1 , points[player][0]);
+                plateau[ID_joueur][tir_ver][tir_hor]=8;
+                printf("\nRATE");
+        }
+
+        affichage_plateau(plateau,ID_joueur);
+}
+
+void phase_de_tir(int tir_ver, int tir_hor,int player, int ID_joueur, int plateau[2][MAP_H][MAP_W], int points[player][1]){
+        printf("\nAu tour du joueur %d:\n", player+1);
 
 
 
+        fflush(stdin);
+        printf("\nEntrez coordonnees lettres :\n");
+        scanf("%d", &tir_ver);
+        tir_ver--;
+        printf("%d",tir_ver);
+        while ((tir_ver<0)||(tir_ver>17)){
+            printf("Tir impossible, veuillez recommencer.\n");
+            scanf("%d", &tir_ver);
+            tir_ver--;
+            printf("%d",tir_ver);
+        }
 
-              }
+        fflush(stdin);
+        printf("\nEntre coordonnees chiffres :\n");
+        scanf("%d",&tir_hor);
+        tir_hor--;
+        printf("%d",tir_hor);
+        while ((tir_hor<0)||(tir_hor>23)){
+            printf("Tir impossible, recommence.");
+            scanf("%d",&tir_hor);
+            tir_hor--;
+            printf("%d",tir_hor);
+        }
+
+//VERIFICATION
+        while (plateau[ID_joueur][tir_ver][tir_hor]>7){
+            printf("\n Recommence tu as deja tire ici ! ");
+
+            fflush(stdin);
+            printf("\nEntre coordonnees lettres :\n");
+            scanf("%d", &tir_ver);
+            tir_ver--;
+            printf("%d",tir_ver);
+            while ((tir_ver<0)||(tir_ver>17)){
+                printf("Tir impossible, recommence.");
+                scanf("%d", &tir_ver);
+                tir_ver--;
+                printf("%d",tir_ver);
+            }
+
+            fflush(stdin);
+            printf("\nEntre coordonnees chiffres :\n");
+            scanf("%d",&tir_hor);
+            tir_hor--;
+            printf("%d",tir_hor);
+            while ((tir_hor<0)||(tir_hor>23)){
+                printf("Tir impossible, recommence.");
+                scanf("%d",&tir_hor);
+                tir_hor--;
+                printf("%d",tir_hor);
+            }
         }
 
 
+        if (plateau[ID_joueur][tir_ver][tir_hor]>0){
+            plateau[ID_joueur][tir_ver][tir_hor]=9;
+            printf("\nTouche ");
+            points[player][0]++;
+            printf("\n Joueur %d || Points=%d",player+1 , points[player][0]);
+
+        }else if (plateau[ID_joueur][tir_ver][tir_hor]==0){printf("\n Joueur %d || Points=%d\n",player+1 , points[player][0]);
+            plateau[ID_joueur][tir_ver][tir_hor]=8;
+            printf("PLOUF... ");
+        }
+        printf("\n+++FIN DU TOUR+++");
+        printf("\n+++APPUIE SUR UNE TOUCHE POUR CONTINUER+++\n\n");
+        fflush(stdin);
+        getchar();
+
+        affichage_plateau(plateau,ID_joueur);
 }
-void touche (int plateau[LONGUEUR][HAUTEUR][ETAT]){
-    int x = 0;
-    int y = 0;
-    printf(" \n\n\n\nQuelles coordonees voulez vous attaquez ?\n");
-    scanf ("%d",&x);// mettre une valeur maximale à sélectionner
-    fflush(stdin);
-    scanf ("%d",&y);//idem
-    if (plateau[x][y]!=0||plateau[x][y]!=9||plateau[x][y]!=8){
-        printf("TOUCHE !!!! ");
-        plateau[x][y]= touched;
-                               }else{
-    printf("Reessaie gros cul!");
-    plateau[x][y]= untouched;
+int main(){
+
+    int ID_joueur=0;
+    int player=0;
+    int i=0;
+    int nb_joueurs=2;
+    int tir_x=0;
+    int tir_y=0;
+    int nb_pts=0;
+    int menu=0;
+    int choix=0;
+    int points[2][1]={0};
+    int corvette[3]={1,1,1};
+    int destroyer[3]={2,3,2};
+    int croiseur[3]={3,4,2};
+    int porte_avion[3]={5,6,1};
+
+    int plateau [IA_VS_IA][MAP_H][MAP_W]={0};
+
+    ID_joueur=0;
+    placer(plateau,corvette,ID_joueur);
+    placer(plateau,destroyer,ID_joueur);
+    placer(plateau,croiseur,ID_joueur);
+    placer(plateau,porte_avion,ID_joueur);
+
+    ID_joueur=1;
+    placer(plateau,corvette,ID_joueur);
+    placer(plateau,destroyer,ID_joueur);
+    placer(plateau,croiseur,ID_joueur);
+    placer(plateau,porte_avion,ID_joueur);
+
+    printf("\nVeux tu charger une partie ? \nOUI= 1  NON = 0\n");
+    scanf("%d", &choix);
+    if (choix==1){
+        load(plateau);
+
+    }
+    printf("\nBataille navale :\n1= PvP  \n2= PvE  \n3= IAvsIA\nChoisis une des options\n");
+
+    scanf("%d", &menu);
+    switch(menu){
+
+case 1:
+    while (points[player][0]<21){
+        ID_joueur=0;
+        player=1;
+        sauvegarde(plateau);
+        phase_de_tir(tir_x,tir_y,player,ID_joueur, plateau, points);
+        if (points[player][0]==21){
+            printf("\n\nFIN DU JEU ! Victoire du joueur %d", player+1);
+            break;
+        }
+        ID_joueur=1;
+        player=0;
+        phase_de_tir(tir_x,tir_y,player,ID_joueur, plateau, points);
+        if (points[player][0]==21){
+            printf("\n\nFIN DU JEU ! Victoire du joueur %d", player+1);
+            break;
+        }
+        printf("\n   Tour n.%d \n",i+1);
+        i++;
+        }
+
+case 2:
+    while (points[player][0]<21){
+        ID_joueur=0;
+        player=1;
+        phase_de_tir(tir_x,tir_y,player,ID_joueur, plateau, points);
+        if (points[player][0]==21){
+            printf("\n\nFIN DU JEU ! Victoire du joueur %d", player+1);
+            break;
+        }
+        ID_joueur=1;
+        player=0;
+        tir_automatique(tir_x,tir_y,player,ID_joueur, plateau, points);
+        if (points[player][0]==21){
+            printf("\n\n\nFIN DU JEU ! Victoire du joueur %d", player+1);
+            break;
+        }
+        printf("\n   Tour n.%d \n",i+1);
+        i++;
     }
 
+case 3:
+    while (points[player][0]<21){
+        ID_joueur=0;
+        player=1;
+        tir_automatique(tir_x,tir_y,player,ID_joueur, plateau, points);
+        if (points[player][0]==21){
+            printf("\n\n\nFIN DU JEU ! Victoire du joueur %d", player+1);
+            break;
+        }
+        ID_joueur=1;
+        player=0;
+        tir_automatique(tir_x,tir_y,player,ID_joueur, plateau, points);
+        if (points[player][0]==21){
+            printf("\n\n\nFIN DU JEU ! Victoire du joueur %d", player+1);
+            break;
+        }
+        printf("\n   Tour n.%d \n",i+1);
+        i++;
+        }
 
-}
-void bateau2 (int plateau[LONGUEUR][HAUTEUR][ETAT]){
-        int posX_dep_bat2 = doRand(0,LONGUEUR-1);
-        int posY_dep_bat2 = doRand(0,HAUTEUR-1);
-        int i = 0;
-        while((plateau[posY_dep_bat2][posX_dep_bat2][0] != 0) && (plateau[posY_dep_bat2 + 1][posX_dep_bat2][0] != 0) && (plateau[posY_dep_bat2 + 2][posX_dep_bat2][0] != 0) ){
 
-        posY_dep_bat2 = doRand(0,LONGUEUR-1);
-        posX_dep_bat2 = doRand(0,HAUTEUR-1);
-}
-        for(i = 0; i < 3; i++){
-            plateau[posX_dep_bat2 + i][posY_dep_bat2][J1] = destroyer;
     }
-    }
-
-
-void bateau1(int plateau[LONGUEUR][HAUTEUR][ETAT]){
-
-    int posX_dep_bat2 = doRand(0,LONGUEUR-1);
-    int posY_dep_bat2 = doRand(0,HAUTEUR-1);
-    while((plateau[posY_dep_bat2][posX_dep_bat2][0] != 0) && (plateau[posY_dep_bat2 + 1][posX_dep_bat2][0] != 0)){
-
-        posY_dep_bat2 = doRand(0, LONGUEUR-1);
-        posX_dep_bat2 = doRand(0, HAUTEUR-1);
-}
-
-      plateau[posX_dep_bat2][posY_dep_bat2][0] = corvette;
-}
-void bateau3(int plateau[LONGUEUR][HAUTEUR][ETAT]){
-        int posX_dep_bat2 = doRand(0,LONGUEUR-1);
-        int posY_dep_bat2 = doRand(0,HAUTEUR-1);
-        int i = 0;
-        while((plateau[posY_dep_bat2][posX_dep_bat2][0] != 0) && (plateau[posY_dep_bat2 + 1][posX_dep_bat2][0] != 0) && (plateau[posY_dep_bat2 + 2][posX_dep_bat2][0] != 0) && (plateau[posY_dep_bat2 + 3][posX_dep_bat2][0] != 0)){
-        posY_dep_bat2 = doRand(0, LONGUEUR-1);
-        posX_dep_bat2 = doRand(0, HAUTEUR-1);
-}
-        for(i = 0; i < 4; i++){
-            plateau[posX_dep_bat2 + i][posY_dep_bat2][J1] = croiseur;
-    }
-    }
-void bateau4(int plateau[LONGUEUR][HAUTEUR][ETAT]){
-
-    int posX_dep_bat2 = doRand(0,LONGUEUR-1);
-    int posY_dep_bat2 = doRand(0,HAUTEUR-1);
-    int i = 0;
-    while((plateau[posY_dep_bat2][posX_dep_bat2][0] != 0) && (plateau[posY_dep_bat2 + 1][posX_dep_bat2][0] != 0) && (plateau[posY_dep_bat2 + 2][posX_dep_bat2][0] != 0) && (plateau[posY_dep_bat2 + 3][posX_dep_bat2][0] != 0)
-           && (plateau[posY_dep_bat2 + 4][posX_dep_bat2][0] != 0) && (plateau[posY_dep_bat2 + 5][posX_dep_bat2][0] != 0)){
-
-        posY_dep_bat2 = doRand(0, LONGUEUR-1);
-        posX_dep_bat2 = doRand(0, HAUTEUR-1);
-}
-    for(i = 0; i < 6; i++){
-        plateau[posX_dep_bat2 + i][posY_dep_bat2][J1] = porte_avion;
-    }
-    }
-int main() {
-
-      int plateau[HAUTEUR][LONGUEUR] = {0};
-
-      bateau2(plateau);
-      bateau2(plateau);
-      bateau1(plateau);
-      bateau3(plateau);
-      bateau3(plateau);
-      bateau4(plateau);
-      afficher_tableau(plateau);
-      touche (plateau);
-      afficher_tableau(plateau);
-
-    return 0;
 }
